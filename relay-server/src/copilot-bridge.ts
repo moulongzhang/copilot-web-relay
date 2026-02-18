@@ -1,101 +1,130 @@
-import * as pty from 'node-pty';
+import { spawn, type ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
 import type { ServerMessage } from './types.js';
-import { OutputParser } from './output-parser.js';
 
 const DEFAULT_CMD = process.env.COPILOT_CMD || 'copilot';
-const RESTART_DELAY = 2000;
 
 export class CopilotBridge extends EventEmitter {
-  private ptyProcess: pty.IPty | null = null;
-  private parser = new OutputParser();
   private cmd: string;
-  private restarting = false;
+  private activeProcess: ChildProcess | null = null;
+  private _ready = true;
 
   constructor(cmd?: string) {
     super();
     this.cmd = cmd || DEFAULT_CMD;
   }
 
-  /** Spawn the Copilot CLI process */
   start() {
-    if (this.ptyProcess) return;
-
-    console.log(`[bridge] Spawning: ${this.cmd}`);
-    this.ptyProcess = pty.spawn(this.cmd, [], {
-      name: 'xterm-256color',
-      cols: 120,
-      rows: 40,
-      env: { ...process.env } as Record<string, string>,
-    });
-
-    this.ptyProcess.onData((data) => {
-      console.log(`[bridge] Raw PTY output (${data.length} bytes):`, JSON.stringify(data.slice(0, 200)));
-      const events = this.parser.parse(data);
-      console.log(`[bridge] Parsed ${events.length} events:`, events.map(e => e.type));
-      for (const event of events) {
-        this.emit('message', event);
-      }
-    });
-
-    this.ptyProcess.onExit(({ exitCode }) => {
-      console.log(`[bridge] Copilot CLI exited with code ${exitCode}`);
-      this.ptyProcess = null;
-      this.parser.reset();
-      this.emit('exit', exitCode);
-
-      // Auto-restart
-      if (!this.restarting) {
-        this.restarting = true;
-        setTimeout(() => {
-          this.restarting = false;
-          console.log('[bridge] Auto-restarting Copilot CLI...');
-          this.start();
-        }, RESTART_DELAY);
-      }
-    });
+    // No persistent process needed - each prompt spawns a new one
+    console.log(`[bridge] Ready to relay prompts via: ${this.cmd} -p`);
+    this._ready = true;
+    this.emit('ready');
   }
 
-  /** Send a prompt to the Copilot CLI */
   sendPrompt(content: string, msgId: string) {
-    if (!this.ptyProcess) {
+    if (this.activeProcess) {
       this.emit('message', {
         type: 'error',
-        message: 'Copilot CLI is not running',
+        message: 'Another prompt is still being processed',
         id: msgId,
       } satisfies ServerMessage);
       return;
     }
 
-    this.parser.setMessageId(msgId);
-    this.ptyProcess.write(content + '\n');
+    this._ready = false;
+    console.log(`[bridge] Executing: ${this.cmd} -p "${content.slice(0, 50)}..."`);
+
+    const proc = spawn(this.cmd, ['-p', content, '--allow-all'], {
+      env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    this.activeProcess = proc;
+
+    let stdout = '';
+    let stderr = '';
+
+    proc.stdout?.on('data', (chunk: Buffer) => {
+      const text = chunk.toString();
+      stdout += text;
+      console.log(`[bridge] stdout chunk (${text.length}b)`);
+      this.emit('message', {
+        type: 'stream',
+        content: text,
+        id: msgId,
+      } satisfies ServerMessage);
+    });
+
+    proc.stderr?.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+
+    proc.on('close', (code) => {
+      console.log(`[bridge] Process exited with code ${code}`);
+      this.activeProcess = null;
+      this._ready = true;
+
+      if (code !== 0 && stderr) {
+        // Filter out the usage stats from stderr, only send actual errors
+        const errorLines = stderr.split('\n').filter(l =>
+          !l.includes('Total usage') &&
+          !l.includes('API time') &&
+          !l.includes('Total session') &&
+          !l.includes('Breakdown') &&
+          !l.includes('Premium requests') &&
+          !l.trim().startsWith('claude-') &&
+          !l.trim().startsWith('gpt-') &&
+          l.trim()
+        ).join('\n').trim();
+
+        if (errorLines) {
+          this.emit('message', {
+            type: 'error',
+            message: errorLines,
+            id: msgId,
+          } satisfies ServerMessage);
+        }
+      }
+
+      this.emit('message', {
+        type: 'done',
+        id: msgId,
+      } satisfies ServerMessage);
+    });
+
+    proc.on('error', (err) => {
+      console.error(`[bridge] Process error:`, err.message);
+      this.activeProcess = null;
+      this._ready = true;
+      this.emit('message', {
+        type: 'error',
+        message: `Failed to start Copilot CLI: ${err.message}`,
+        id: msgId,
+      } satisfies ServerMessage);
+    });
   }
 
-  /** Send interrupt (Ctrl+C) to the CLI */
   interrupt() {
-    if (this.ptyProcess) {
-      this.ptyProcess.write('\x03');
+    if (this.activeProcess) {
+      console.log('[bridge] Killing active process');
+      this.activeProcess.kill('SIGINT');
+      this.activeProcess = null;
+      this._ready = true;
     }
   }
 
-  /** Resize the PTY */
-  resize(cols: number, rows: number) {
-    if (this.ptyProcess) {
-      this.ptyProcess.resize(cols, rows);
-    }
+  resize(_cols: number, _rows: number) {
+    // Not needed for non-interactive mode
   }
 
-  /** Kill the CLI process */
   stop() {
-    this.restarting = true; // prevent auto-restart
-    if (this.ptyProcess) {
-      this.ptyProcess.kill();
-      this.ptyProcess = null;
-    }
-    this.parser.reset();
+    this.interrupt();
   }
 
   get isRunning(): boolean {
-    return this.ptyProcess !== null;
+    return true; // Always ready to accept prompts
+  }
+
+  get ready(): boolean {
+    return this._ready;
   }
 }

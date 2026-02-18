@@ -17,7 +17,7 @@ export function createServer(port: number) {
   app.get('/health', (_req, res) => {
     res.json({
       status: 'ok',
-      copilot: bridge.isRunning ? 'running' : 'stopped',
+      copilot: bridge.isRunning ? (bridge.ready ? 'ready' : 'starting') : 'stopped',
     });
   });
 

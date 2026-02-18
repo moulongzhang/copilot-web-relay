@@ -3,10 +3,8 @@ import type {
   ToolStartMessage,
   ToolEndMessage,
   StreamMessage,
-  DoneMessage,
 } from './types.js';
 
-// Patterns to detect tool usage in Copilot CLI output
 const TOOL_START_PATTERNS: Array<{ pattern: RegExp; tool: string }> = [
   { pattern: /\bEditing\s+(.+)/i, tool: 'edit_file' },
   { pattern: /\bCreating\s+(?:file\s+)?(.+)/i, tool: 'create_file' },
@@ -23,100 +21,44 @@ const TOOL_END_PATTERNS: Array<{ pattern: RegExp; tool: string }> = [
   { pattern: /\bRead\s+(.+)/i, tool: 'read_file' },
 ];
 
-// Detect when Copilot CLI is ready for next input
-const PROMPT_READY_PATTERN = /(?:^|\n)\s*>\s*$/;
-
-// ANSI control sequences to strip for pattern matching (keep raw for streaming)
-const ANSI_REGEX = /\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x07]*\x07/g;
+// Usage stats lines appended by copilot -p (filter these out)
+const STATS_PATTERNS = [
+  /^Total usage est:/,
+  /^API time spent:/,
+  /^Total session time:/,
+  /^Total code changes:/,
+  /^Breakdown by AI model:/,
+  /^\s*(claude|gpt|gemini)-/,
+  /^\s*\d+[\.\d]*k?\s+in,/,
+];
 
 export class OutputParser {
-  private buffer = '';
   private currentMsgId = '';
 
   setMessageId(id: string) {
     this.currentMsgId = id;
-    this.buffer = '';
   }
 
-  /**
-   * Parse a chunk of raw terminal output into structured events.
-   * Returns an array of ServerMessages to send to the client.
-   */
-  parse(rawChunk: string): ServerMessage[] {
-    const events: ServerMessage[] = [];
-    this.buffer += rawChunk;
+  hasActiveMessage(): boolean {
+    return this.currentMsgId !== '';
+  }
 
-    // Only emit events when we have a valid message ID
-    if (!this.currentMsgId) {
-      return [];
-    }
+  getMessageId(): string {
+    return this.currentMsgId;
+  }
 
-    const cleanChunk = rawChunk.replace(ANSI_REGEX, '');
-    const lines = cleanChunk.split('\n');
+  clearMessage() {
+    this.currentMsgId = '';
+  }
 
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-
-      // Check for tool start
-      let matched = false;
-      for (const { pattern, tool } of TOOL_START_PATTERNS) {
-        const m = trimmed.match(pattern);
-        if (m) {
-          events.push({
-            type: 'tool_start',
-            tool,
-            detail: m[1] ?? '',
-            id: this.currentMsgId,
-          } satisfies ToolStartMessage);
-          matched = true;
-          break;
-        }
-      }
-      if (matched) continue;
-
-      // Check for tool end
-      for (const { pattern, tool } of TOOL_END_PATTERNS) {
-        const m = trimmed.match(pattern);
-        if (m) {
-          events.push({
-            type: 'tool_end',
-            tool,
-            status: 'success',
-            id: this.currentMsgId,
-          } satisfies ToolEndMessage);
-          matched = true;
-          break;
-        }
-      }
-      if (matched) continue;
-    }
-
-    // Stream the raw text (with ANSI codes stripped for clean display)
-    const streamContent = cleanChunk;
-    if (streamContent) {
-      events.push({
-        type: 'stream',
-        content: streamContent,
-        id: this.currentMsgId,
-      } satisfies StreamMessage);
-    }
-
-    // Check if prompt is ready (Copilot is waiting for input)
-    const cleanBuffer = this.buffer.replace(ANSI_REGEX, '');
-    if (PROMPT_READY_PATTERN.test(cleanBuffer)) {
-      events.push({
-        type: 'done',
-        id: this.currentMsgId,
-      } satisfies DoneMessage);
-      this.buffer = '';
-    }
-
-    return events;
+  /** Strip usage stats from copilot -p output */
+  static stripStats(text: string): string {
+    return text.split('\n').filter(line =>
+      !STATS_PATTERNS.some(p => p.test(line.trim()))
+    ).join('\n').replace(/\n{3,}/g, '\n\n').trim();
   }
 
   reset() {
-    this.buffer = '';
     this.currentMsgId = '';
   }
 }
