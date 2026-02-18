@@ -358,12 +358,6 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  animation: overlay-in 0.15s ease-out;
-}
-
-@keyframes overlay-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 .settings-panel {
@@ -433,12 +427,6 @@ body {
 
 /* Responsive — Mobile */
 @media (max-width: 640px) {
-  .app.settings-active .app-header,
-  .app.settings-active .chat-window,
-  .app.settings-active .input-container {
-    visibility: hidden;
-  }
-
   .app-header {
     padding: 10px 12px;
   }

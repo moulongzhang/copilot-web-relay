@@ -48,7 +48,6 @@ export default function SettingsPanel({
     setDraft(settings);
   }, [settings]);
 
-  // Lock body scroll when settings is open
   useEffect(() => {
     if (open) {
       if (document.activeElement instanceof HTMLElement) {
@@ -63,21 +62,20 @@ export default function SettingsPanel({
     };
   }, [open]);
 
-  if (!open) return null;
-
   const handleSave = () => {
     const saved = { ...draft };
-    // Close overlay FIRST and synchronously remove it from DOM
+    saveSettings(saved);
+    onSave(saved);
     onClose();
-    // Defer state update to next frame to ensure overlay is fully gone
-    requestAnimationFrame(() => {
-      saveSettings(saved);
-      onSave(saved);
-    });
   };
 
+  // Always render — use CSS display:none to hide. Avoids iOS Safari DOM removal timing issues.
   return (
-    <div className="settings-overlay" onClick={onClose}>
+    <div
+      className="settings-overlay"
+      style={{ display: open ? 'flex' : 'none' }}
+      onClick={onClose}
+    >
       <div className="settings-panel" onClick={(e) => e.stopPropagation()}>
         <h2>Settings</h2>
 
