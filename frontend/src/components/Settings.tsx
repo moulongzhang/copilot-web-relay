@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 const SETTINGS_KEY = 'copilot-relay-settings';
 
@@ -48,10 +49,13 @@ export default function SettingsPanel({
     setDraft(settings);
   }, [settings]);
 
-  // Blur any focused input when settings opens to dismiss mobile keyboard
+  // Blur any focused input and scroll to top when settings opens
   useEffect(() => {
-    if (open && document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
+    if (open) {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      window.scrollTo(0, 0);
     }
   }, [open]);
 
@@ -63,7 +67,7 @@ export default function SettingsPanel({
     onSave(draft);
   };
 
-  return (
+  return createPortal(
     <div className="settings-overlay" onClick={onClose}>
       <div className="settings-panel" onClick={(e) => e.stopPropagation()}>
         <h2>Settings</h2>
@@ -113,7 +117,8 @@ export default function SettingsPanel({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
