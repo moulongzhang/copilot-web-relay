@@ -1,0 +1,20 @@
+{
+  "name": "copilot-web-relay",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ChatGPT-like web UI that relays prompts to a local Copilot CLI via Cloudflare Tunnel",
+  "workspaces": [
+    "frontend",
+    "relay-server"
+  ],
+  "scripts": {
+    "dev:relay": "npm run dev --workspace=relay-server",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:relay": "npm run build --workspace=relay-server",
+    "start:relay": "npm run start --workspace=relay-server"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
