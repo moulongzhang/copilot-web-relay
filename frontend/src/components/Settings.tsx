@@ -49,13 +49,17 @@ export default function SettingsPanel({
     setDraft(settings);
   }, [settings]);
 
-  // Blur any focused input and scroll to top when settings opens
+  // Lock body scroll and blur focused inputs when settings opens
   useEffect(() => {
     if (open) {
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
       window.scrollTo(0, 0);
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
     }
   }, [open]);
 
