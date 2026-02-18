@@ -122,8 +122,9 @@ body {
 /* Message */
 .message-row {
   display: flex;
-  gap: 16px;
-  padding: 16px 20px;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 20px;
   max-width: 800px;
   margin: 0 auto;
   width: 100%;
@@ -132,22 +133,22 @@ body {
 .message-user {
   background: var(--bg-message-user);
   border-radius: var(--radius);
-  margin: 4px 20px;
-  max-width: 760px;
 }
 
 .message-avatar {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   overflow: hidden;
+  margin-top: 2px;
 }
 
 .message-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .message-body {
@@ -192,9 +193,10 @@ body {
 
 /* Typing Indicator */
 .typing-indicator {
-  display: flex;
-  gap: 4px;
-  padding: 8px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
 }
 
 .typing-indicator span {

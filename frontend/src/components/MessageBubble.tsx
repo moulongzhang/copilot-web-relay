@@ -14,6 +14,7 @@ const copilotAvatar = `${base}copilot-icon.png`;
 
 export default function MessageBubble({ message }: Props) {
   const isUser = message.role === 'user';
+  const isTyping = !message.done && !message.content;
 
   return (
     <div className={`message-row ${isUser ? 'message-user' : 'message-assistant'}`}>
@@ -22,16 +23,22 @@ export default function MessageBubble({ message }: Props) {
       </div>
       <div className="message-body">
         {message.tools.length > 0 && <ToolIndicator tools={message.tools} />}
-        <div className="message-content">
-          {isUser ? (
-            <p>{message.content}</p>
-          ) : (
-            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-              {message.content || (message.done ? '' : '...')}
-            </ReactMarkdown>
-          )}
-        </div>
-        {!message.done && <div className="typing-indicator"><span /><span /><span /></div>}
+        {isTyping ? (
+          <div className="typing-indicator"><span /><span /><span /></div>
+        ) : (
+          <div className="message-content">
+            {isUser ? (
+              <p>{message.content}</p>
+            ) : (
+              <>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                  {message.content}
+                </ReactMarkdown>
+                {!message.done && <div className="typing-indicator"><span /><span /><span /></div>}
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
