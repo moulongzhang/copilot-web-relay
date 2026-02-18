@@ -9,7 +9,7 @@ import { useChat } from './hooks/useChat';
 export default function App() {
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const { messages, addUserMessage, handleServerMessage, clearHistory } = useChat();
+  const { messages, addUserMessage, handleServerMessage, markMessageDone, clearHistory } = useChat();
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.theme);
@@ -26,6 +26,14 @@ export default function App() {
   });
 
   const isWaiting = messages.some((m) => m.role === 'assistant' && !m.done);
+  const waitingMsgId = messages.find((m) => m.role === 'assistant' && !m.done)?.id;
+
+  const handleInterrupt = useCallback(() => {
+    if (waitingMsgId) {
+      send({ type: 'interrupt', id: waitingMsgId });
+      markMessageDone(waitingMsgId);
+    }
+  }, [waitingMsgId, send, markMessageDone]);
 
   const handleSend = useCallback(
     (content: string) => {
@@ -51,7 +59,7 @@ export default function App() {
       <ChatWindow messages={messages} />
 
       <div className="input-container">
-        <InputBar onSend={handleSend} disabled={status !== 'connected' || isWaiting} />
+        <InputBar onSend={handleSend} disabled={status !== 'connected'} isWaiting={isWaiting} onInterrupt={handleInterrupt} />
       </div>
 
       <SettingsPanel

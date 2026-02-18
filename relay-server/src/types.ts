@@ -17,7 +17,13 @@ export interface PingMessage {
   type: 'ping';
 }
 
-export type ClientMessage = PromptMessage | InterruptMessage | PingMessage;
+export interface OpenFileMessage {
+  type: 'open_file';
+  path: string;
+  id: string;
+}
+
+export type ClientMessage = PromptMessage | InterruptMessage | PingMessage | OpenFileMessage;
 
 // --- Server → Client Messages ---
 
@@ -56,13 +62,22 @@ export interface PongMessage {
   type: 'pong';
 }
 
+export interface FileOpenedMessage {
+  type: 'file_opened';
+  path: string;
+  success: boolean;
+  message?: string;
+  id: string;
+}
+
 export type ServerMessage =
   | StreamMessage
   | ToolStartMessage
   | ToolEndMessage
   | DoneMessage
   | ErrorMessage
-  | PongMessage;
+  | PongMessage
+  | FileOpenedMessage;
 
 // --- Chat State Types ---
 

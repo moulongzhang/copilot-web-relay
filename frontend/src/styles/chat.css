@@ -306,6 +306,26 @@ body {
   cursor: not-allowed;
 }
 
+.stop-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #ef4444;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.stop-button:hover {
+  background: #dc2626;
+}
+
 /* Settings Panel */
 .settings-overlay {
   position: fixed;

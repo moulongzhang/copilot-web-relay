@@ -92,6 +92,11 @@ function handleClientMessage(
       bridge.interrupt();
       break;
 
+    case 'open_file':
+      console.log(`[ws] Open file request: ${msg.path}`);
+      bridge.openFile(msg.path, msg.id);
+      break;
+
     case 'ping':
       ws.send(JSON.stringify({ type: 'pong' }));
       break;

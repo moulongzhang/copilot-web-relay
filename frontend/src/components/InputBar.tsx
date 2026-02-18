@@ -3,9 +3,11 @@ import { useState, type KeyboardEvent } from 'react';
 interface Props {
   onSend: (content: string) => void;
   disabled: boolean;
+  isWaiting: boolean;
+  onInterrupt: () => void;
 }
 
-export default function InputBar({ onSend, disabled }: Props) {
+export default function InputBar({ onSend, disabled, isWaiting, onInterrupt }: Props) {
   const [input, setInput] = useState('');
 
   const handleSend = () => {
@@ -31,16 +33,22 @@ export default function InputBar({ onSend, disabled }: Props) {
         onKeyDown={handleKeyDown}
         placeholder="Send a message…"
         rows={1}
-        disabled={disabled}
+        disabled={disabled || isWaiting}
       />
-      <button
-        className="send-button"
-        onClick={handleSend}
-        disabled={disabled || !input.trim()}
-        title="Send"
-      >
-        ▲
-      </button>
+      {isWaiting ? (
+        <button className="stop-button" onClick={onInterrupt} title="Stop generating">
+          ■
+        </button>
+      ) : (
+        <button
+          className="send-button"
+          onClick={handleSend}
+          disabled={disabled || !input.trim()}
+          title="Send"
+        >
+          ▲
+        </button>
+      )}
     </div>
   );
 }

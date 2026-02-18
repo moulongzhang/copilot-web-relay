@@ -78,6 +78,13 @@ export function useChat() {
               : t,
           );
           break;
+        case 'file_opened':
+          if (msg.success) {
+            message.content += `\n\n📂 **Opened:** \`${msg.path}\``;
+          } else {
+            message.content += `\n\n❌ **Failed to open:** ${msg.message}`;
+          }
+          break;
         case 'done':
           message.done = true;
           break;
@@ -93,10 +100,25 @@ export function useChat() {
     });
   }, []);
 
+  const markMessageDone = useCallback((id: string) => {
+    setMessages((prev) => {
+      const next = [...prev];
+      const idx = next.findIndex((m) => m.role === 'assistant' && m.id === id);
+      if (idx === -1) return prev;
+      const message = { ...next[idx], done: true };
+      if (message.content) {
+        message.content += '\n\n*(interrupted)*';
+      }
+      next[idx] = message;
+      saveHistory(next);
+      return next;
+    });
+  }, []);
+
   const clearHistory = useCallback(() => {
     setMessages([]);
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
-  return { messages, addUserMessage, handleServerMessage, clearHistory };
+  return { messages, addUserMessage, handleServerMessage, markMessageDone, clearHistory };
 }
