@@ -138,6 +138,7 @@ export class CopilotBridge extends EventEmitter {
     const proc = spawn(this.cmd, ['-p', content, '--allow-all'], {
       env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' },
       stdio: ['ignore', 'pipe', 'pipe'],
+      detached: true,
     });
     this.activeProcess = proc;
 
@@ -212,14 +213,27 @@ export class CopilotBridge extends EventEmitter {
       const proc = this.activeProcess;
       this.activeProcess = null;
       this._ready = true;
-      proc.kill('SIGINT');
-      // Force kill if SIGINT doesn't work within 2s
-      setTimeout(() => {
-        if (!proc.killed) {
-          console.log('[bridge] Force killing process');
-          proc.kill('SIGKILL');
-        }
-      }, 2000);
+
+      // Destroy pipes first to unblock the event loop
+      proc.stdout?.destroy();
+      proc.stderr?.destroy();
+
+      // Kill the entire process group (negative PID) to catch child processes
+      try {
+        if (proc.pid) process.kill(-proc.pid, 'SIGTERM');
+      } catch {
+        // process group kill may fail if process already exited
+      }
+      proc.kill('SIGTERM');
+
+      // Force kill after 1s
+      const killTimer = setTimeout(() => {
+        try {
+          if (proc.pid) process.kill(-proc.pid, 'SIGKILL');
+        } catch { /* already dead */ }
+        proc.kill('SIGKILL');
+      }, 1000);
+      killTimer.unref(); // Don't let this timer block process exit
     }
   }
 

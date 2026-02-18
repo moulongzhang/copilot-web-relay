@@ -51,9 +51,9 @@ export default function SettingsPanel({
   if (!open) return null;
 
   const handleSave = () => {
+    onClose();
     saveSettings(draft);
     onSave(draft);
-    onClose();
   };
 
   return (
