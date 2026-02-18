@@ -30,7 +30,9 @@ export class CopilotBridge extends EventEmitter {
     });
 
     this.ptyProcess.onData((data) => {
+      console.log(`[bridge] Raw PTY output (${data.length} bytes):`, JSON.stringify(data.slice(0, 200)));
       const events = this.parser.parse(data);
+      console.log(`[bridge] Parsed ${events.length} events:`, events.map(e => e.type));
       for (const event of events) {
         this.emit('message', event);
       }

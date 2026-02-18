@@ -28,7 +28,7 @@ export function useChat() {
       const next = [
         ...prev,
         {
-          id,
+          id: id + '-user',
           role: 'user' as const,
           content,
           tools: [],
@@ -36,7 +36,7 @@ export function useChat() {
           timestamp: Date.now(),
         },
         {
-          id: id + '-response',
+          id,
           role: 'assistant' as const,
           content: '',
           tools: [],
@@ -55,7 +55,7 @@ export function useChat() {
     setMessages((prev) => {
       const next = [...prev];
       const idx = next.findIndex(
-        (m) => m.role === 'assistant' && m.id === msg.id + '-response',
+        (m) => m.role === 'assistant' && m.id === msg.id,
       );
       if (idx === -1) return prev;
 

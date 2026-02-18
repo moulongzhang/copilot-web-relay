@@ -46,6 +46,11 @@ export class OutputParser {
     const events: ServerMessage[] = [];
     this.buffer += rawChunk;
 
+    // Only emit events when we have a valid message ID
+    if (!this.currentMsgId) {
+      return [];
+    }
+
     const cleanChunk = rawChunk.replace(ANSI_REGEX, '');
     const lines = cleanChunk.split('\n');
 
