@@ -45,7 +45,7 @@ export default function App() {
   );
 
   return (
-    <div className="app">
+    <div className={`app ${settingsOpen ? 'settings-active' : ''}`}>
       <header className="app-header">
         <h1>Copilot Web Relay</h1>
         <div className="header-actions">

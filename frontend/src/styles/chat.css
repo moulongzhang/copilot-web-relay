@@ -433,6 +433,12 @@ body {
 
 /* Responsive — Mobile */
 @media (max-width: 640px) {
+  .app.settings-active .app-header,
+  .app.settings-active .chat-window,
+  .app.settings-active .input-container {
+    visibility: hidden;
+  }
+
   .app-header {
     padding: 10px 12px;
   }
