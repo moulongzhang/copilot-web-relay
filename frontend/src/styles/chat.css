@@ -474,7 +474,7 @@ body {
   }
 
   .settings-overlay {
-    background: var(--bg-primary);
+    background: transparent;
   }
 
   .settings-panel {

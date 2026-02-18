@@ -65,8 +65,9 @@ export default function SettingsPanel({
   const handleSave = () => {
     const saved = { ...draft };
     saveSettings(saved);
-    onSave(saved);
     onClose();
+    // Defer settings update to avoid WebSocket reconnection blocking overlay dismiss
+    setTimeout(() => onSave(saved), 0);
   };
 
   // Always render — use CSS display:none to hide. Avoids iOS Safari DOM removal timing issues.
