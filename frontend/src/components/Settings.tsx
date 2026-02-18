@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 
 const SETTINGS_KEY = 'copilot-relay-settings';
 
@@ -49,29 +48,35 @@ export default function SettingsPanel({
     setDraft(settings);
   }, [settings]);
 
-  // Lock body scroll and blur focused inputs when settings opens
+  // Lock body scroll when settings is open
   useEffect(() => {
     if (open) {
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
-      window.scrollTo(0, 0);
       document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = '';
-      };
+    } else {
+      document.body.style.overflow = '';
     }
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [open]);
 
   if (!open) return null;
 
   const handleSave = () => {
+    const saved = { ...draft };
+    // Close overlay FIRST and synchronously remove it from DOM
     onClose();
-    saveSettings(draft);
-    onSave(draft);
+    // Defer state update to next frame to ensure overlay is fully gone
+    requestAnimationFrame(() => {
+      saveSettings(saved);
+      onSave(saved);
+    });
   };
 
-  return createPortal(
+  return (
     <div className="settings-overlay" onClick={onClose}>
       <div className="settings-panel" onClick={(e) => e.stopPropagation()}>
         <h2>Settings</h2>
@@ -121,8 +126,7 @@ export default function SettingsPanel({
           </div>
         </div>
       </div>
-    </div>,
-    document.body,
+    </div>
   );
 }
 
