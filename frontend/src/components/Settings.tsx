@@ -48,6 +48,13 @@ export default function SettingsPanel({
     setDraft(settings);
   }, [settings]);
 
+  // Blur any focused input when settings opens to dismiss mobile keyboard
+  useEffect(() => {
+    if (open && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }, [open]);
+
   if (!open) return null;
 
   const handleSave = () => {
