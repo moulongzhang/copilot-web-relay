@@ -42,11 +42,11 @@ test.describe('Mobile Debug Screenshots', () => {
     await page.fill('.settings-panel input[type="text"]', TUNNEL_WS_URL);
     const tokenInput = page.locator('.settings-panel input[type="password"]');
     await tokenInput.fill(AUTH_TOKEN);
-    await page.screenshot({ path: 'test-results/mobile-03a-before-save.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/mobile-03a-before-save.png' });
     
     await page.tap('.btn-primary');
     await page.waitForTimeout(1000);
-    await page.screenshot({ path: 'test-results/mobile-03b-after-save.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/mobile-03b-after-save.png' });
     
     // Check if overlay is gone
     const overlayVisible = await page.locator('.settings-overlay').isVisible();
