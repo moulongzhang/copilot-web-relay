@@ -9,16 +9,17 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'cd relay-server && npm run dev',
+      command: 'cd relay-server && AUTH_TOKEN= npm run dev',
       port: 3100,
       reuseExistingServer: true,
-      timeout: 10000,
+      timeout: 15000,
+      env: { AUTH_TOKEN: '' },
     },
     {
       command: 'cd frontend && npm run dev',
       port: 5173,
       reuseExistingServer: true,
-      timeout: 10000,
+      timeout: 15000,
     },
   ],
 });

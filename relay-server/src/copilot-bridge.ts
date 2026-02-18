@@ -209,9 +209,17 @@ export class CopilotBridge extends EventEmitter {
   interrupt() {
     if (this.activeProcess) {
       console.log('[bridge] Killing active process');
-      this.activeProcess.kill('SIGINT');
+      const proc = this.activeProcess;
       this.activeProcess = null;
       this._ready = true;
+      proc.kill('SIGINT');
+      // Force kill if SIGINT doesn't work within 2s
+      setTimeout(() => {
+        if (!proc.killed) {
+          console.log('[bridge] Force killing process');
+          proc.kill('SIGKILL');
+        }
+      }, 2000);
     }
   }
 

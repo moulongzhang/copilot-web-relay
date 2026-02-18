@@ -3,6 +3,7 @@ import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { ClientMessage, ServerMessage } from './types.js';
 import { CopilotBridge } from './copilot-bridge.js';
+import { fruits } from './fruits.js';
 
 const AUTH_TOKEN = process.env.AUTH_TOKEN || '';
 const HEARTBEAT_INTERVAL = 30000;
@@ -19,6 +20,11 @@ export function createServer(port: number) {
       status: 'ok',
       copilot: bridge.isRunning ? (bridge.ready ? 'ready' : 'starting') : 'stopped',
     });
+  });
+
+  // Fruits endpoint
+  app.get('/fruits', (_req, res) => {
+    res.json(fruits);
   });
 
   // Start Copilot CLI

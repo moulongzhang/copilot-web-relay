@@ -3,7 +3,7 @@ import { createServer } from './server.js';
 
 const PORT = parseInt(process.env.PORT || '3100', 10);
 
-const { server, bridge } = createServer(PORT);
+const { server, wss, bridge } = createServer(PORT);
 
 server.listen(PORT, () => {
   console.log(`[relay] Server listening on http://localhost:${PORT}`);
@@ -12,15 +12,22 @@ server.listen(PORT, () => {
 });
 
 // Graceful shutdown
+let shuttingDown = false;
 function shutdown(signal: string) {
+  if (shuttingDown) {
+    console.log(`[relay] Force exit`);
+    process.exit(1);
+  }
+  shuttingDown = true;
   console.log(`\n[relay] ${signal} received, shutting down...`);
   bridge.stop();
+  wss.clients.forEach((client) => client.terminate());
+  wss.close();
   server.close(() => {
     console.log('[relay] Server closed');
-    process.exit(0);
   });
-  // Force exit after 5s
-  setTimeout(() => process.exit(1), 5000);
+  // Exit immediately — don't wait for server.close callback
+  setTimeout(() => process.exit(0), 200);
 }
 
 process.on('SIGINT', () => shutdown('SIGINT'));
